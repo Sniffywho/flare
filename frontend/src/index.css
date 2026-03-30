@@ -1,0 +1,184 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Theme morph: circular reveal overlay ── */
+@keyframes theme-reveal {
+  from { clip-path: circle(0px at var(--rx) var(--ry)); }
+  to   { clip-path: circle(150vmax at var(--rx) var(--ry)); }
+}
+
+/* Suppress all entrance animations during theme reveal swap */
+.no-animate * {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  transition-duration: 0s !important;
+}
+
+.reveal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  animation: theme-reveal 0.55s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  overflow: auto;
+}
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: #011936;
+    @apply text-on-background;
+  }
+
+  ::selection {
+    @apply bg-primary-container text-on-primary-container;
+  }
+}
+
+@layer components {
+  /* ── Glass panel ── */
+  .glass-panel {
+    backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.95);
+  }
+
+  .asymmetric-shape {
+    border-radius: 2rem 0.5rem 2rem 2rem;
+  }
+
+  .login-card-glow {
+    box-shadow: 0 0 40px rgba(255, 77, 128, 0.15);
+  }
+
+  /* ── Input field ── */
+  .input-field {
+    @apply relative flex items-center bg-[#FFF0F5] rounded-[1rem];
+    outline: 1.5px solid #FFD6E7;
+    transition: outline 0.2s ease, box-shadow 0.2s ease;
+  }
+  .input-field:focus-within {
+    outline: 2px solid #ff4d80;
+    box-shadow: 0 0 0 4px rgba(255, 77, 128, 0.08);
+  }
+
+  /* ── Pill input (dark/light split layout) ── */
+  .pill-input {
+    transition: box-shadow 0.2s ease, background-color 0.2s ease;
+  }
+  .pill-input:focus {
+    box-shadow: 0 0 0 3px rgba(255, 77, 128, 0.18);
+  }
+
+  /* btn-icon must NOT transition transform on the container (it has -translate-y-1/2) */
+  .btn-icon {
+    transition: color 0.15s ease;
+  }
+  .btn-primary,
+  .btn-social,
+  .btn-theme {
+    transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease, background-color 0.2s ease, color 0.15s ease;
+  }
+
+  /* ── Primary button ── */
+  .btn-primary:hover:not(:disabled) {
+    transform: scale(1.02);
+    filter: brightness(1.08);
+    box-shadow: 0 6px 20px rgba(255, 77, 128, 0.35);
+  }
+  .btn-primary:active:not(:disabled) {
+    transform: scale(0.97);
+    filter: brightness(0.94);
+    box-shadow: none;
+  }
+
+  /* ── Icon/ghost button (visibility toggle etc.) ── */
+  /* container has -translate-y-1/2 so we never touch its transform */
+  .btn-icon > span {
+    display: inline-block;
+    transform-origin: center;
+    transition: transform 0.15s ease, color 0.15s ease;
+  }
+  .btn-icon:hover > span {
+    transform: scale(1.2);
+  }
+  .btn-icon:active > span {
+    transform: scale(0.85);
+  }
+
+  /* ── Social button ── */
+  .btn-social:hover {
+    transform: scale(1.04);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.09);
+  }
+  .btn-social:active {
+    transform: scale(0.96);
+    box-shadow: none;
+  }
+
+  /* ── Theme toggle ── */
+  .btn-theme:hover {
+    transform: rotate(22deg) scale(1.12);
+  }
+  .btn-theme:active {
+    transform: rotate(22deg) scale(0.9);
+  }
+
+  /* ── Link hover ── */
+  .link-primary {
+    transition: color 0.15s ease, letter-spacing 0.15s ease;
+  }
+  .link-primary:hover {
+    letter-spacing: 0.01em;
+  }
+}
+
+@layer utilities {
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+
+  /* Checkbox pulse on check */
+  input[type='checkbox'] {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    cursor: pointer;
+  }
+  input[type='checkbox']:checked {
+    transform: scale(1.15);
+  }
+  input[type='checkbox']:active {
+    transform: scale(0.9);
+  }
+
+  /* Smooth icon transitions */
+  .icon-transition {
+    transition: transform 0.2s ease, color 0.2s ease;
+  }
+
+  /* Gradient text — reliable across transitions */
+  .text-gradient-dark {
+    background: linear-gradient(135deg, #ff8d87 0%, #ff7670 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+  .text-gradient-light {
+    background: linear-gradient(135deg, #ff7670 0%, #ff8d87 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  /* Input focus glow — light */
+  .pill-input-light:focus {
+    box-shadow: 0 0 0 3px rgba(255, 141, 135, 0.2);
+    outline: none;
+  }
+
+  /* Input focus glow — dark */
+  .pill-input-dark:focus {
+    box-shadow: 0 0 0 3px rgba(255, 141, 135, 0.15);
+    outline: none;
+  }
+}
