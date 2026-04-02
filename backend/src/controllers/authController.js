@@ -120,3 +120,29 @@ exports.changePassword = catchAsync(async (req, res, next) => {
 
   return successResponse(res, {}, 'Password updated successfully');
 });
+
+// ─── OAuth Callback ───────────────────────────────────────────────────────────
+exports.oauthCallback = catchAsync(async (req, res) => {
+  // Passport populates req.user with the authenticated user
+  const user = req.user;
+
+  if (!user) {
+    return res.redirect(`${process.env.CLIENT_URL}/login?error=oauth_failed`);
+  }
+
+  const accessToken = generateAccessToken(user._id);
+  const refreshToken = generateRefreshToken(user._id);
+
+  user.refreshToken = await bcrypt.hash(refreshToken, 10);
+  user.status = 'online';
+  await user.save({ validateBeforeSave: false });
+
+  // Redirect to frontend with tokens as query params
+  // Frontend will extract these and save them to localStorage
+  const redirectUrl = new URL(`${process.env.CLIENT_URL}/`);
+  redirectUrl.searchParams.set('accessToken', accessToken);
+  redirectUrl.searchParams.set('refreshToken', refreshToken);
+  redirectUrl.searchParams.set('userId', user._id);
+
+  res.redirect(redirectUrl.toString());
+});

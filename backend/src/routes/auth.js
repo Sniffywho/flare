@@ -1,9 +1,11 @@
 const router = require('express').Router();
 const { body } = require('express-validator');
+const passport = require('passport');
 const authController = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 const validate = require('../middleware/validate');
 const { authRateLimiter } = require('../middleware/rateLimiter');
+require('../config/passport');
 
 // ── Validation chains ──────────────────────────────────────────────────────────
 
@@ -45,6 +47,23 @@ router.patch(
   ],
   validate,
   authController.changePassword
+);
+
+// ── OAuth Routes ───────────────────────────────────────────────────────────────
+router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+
+router.get(
+  '/google/callback',
+  passport.authenticate('google', { session: false }),
+  authController.oauthCallback
+);
+
+router.get('/apple', passport.authenticate('apple', { scope: ['name', 'email'] }));
+
+router.get(
+  '/apple/callback',
+  passport.authenticate('apple', { session: false }),
+  authController.oauthCallback
 );
 
 module.exports = router;

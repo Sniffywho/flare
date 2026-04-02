@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
 const mongoSanitize = require('express-mongo-sanitize');
+const passport = require('passport');
 
 const { globalRateLimiter } = require('./middleware/rateLimiter');
 const errorHandler = require('./middleware/errorHandler');
@@ -38,6 +39,9 @@ app.use(mongoSanitize());
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Passport initialization for OAuth
+app.use(passport.initialize());
 
 // HTTP request logger (skip in test env)
 if (process.env.NODE_ENV !== 'test') {

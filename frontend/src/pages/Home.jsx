@@ -1007,7 +1007,7 @@ function ChatLayout({ isDark, onToggle }) {
       )}
 
       {/* ── Server Rail ── */}
-      <nav className="fixed left-0 top-0 h-full z-50 w-[72px] flex flex-col items-center py-4 gap-2"
+      <nav className="hidden lg:flex fixed left-0 top-0 h-full z-50 w-[72px] flex-col items-center py-4 gap-2"
         style={{ backgroundColor: c.rail, borderRight: `1px solid ${c.border}` }}>
 
         <div className="relative mb-1">
@@ -1051,7 +1051,7 @@ function ChatLayout({ isDark, onToggle }) {
       </nav>
 
       {/* ── Channel Sidebar ── */}
-      <aside className="fixed left-[72px] top-0 h-full z-40 w-[260px] flex flex-col"
+      <aside className="hidden lg:flex fixed left-[72px] top-0 h-full z-40 w-[260px] flex-col"
         style={{ backgroundColor: c.sidebar, borderRight: `1px solid ${c.border}` }}>
         <header className="h-16 flex items-center px-4 flex-shrink-0 gap-2"
           style={{ borderBottom: `1px solid ${c.border}` }}>
@@ -1379,10 +1379,14 @@ function ChatLayout({ isDark, onToggle }) {
 
       {/* ── Main Chat ── */}
       <main className="flex flex-col h-screen overflow-hidden"
-        style={{ marginLeft: '332px', marginRight: dmMode ? '0' : '240px', backgroundColor: c.main }}>
+        style={{
+          marginLeft: window.innerWidth >= 1024 ? '332px' : '0',
+          marginRight: (window.innerWidth >= 1024 && !dmMode) ? '240px' : '0',
+          backgroundColor: c.main
+        }}>
 
         {/* Header */}
-        <header className="h-16 flex items-center justify-between px-6 flex-shrink-0"
+        <header className="h-12 md:h-16 flex items-center justify-between px-3 md:px-6 flex-shrink-0"
           style={{ backgroundColor: c.headerBg, borderBottom: `1px solid ${c.border}` }}>
           <div className="flex items-center gap-3 min-w-0">
             {activeChannel?.type === 'dm'
@@ -1447,7 +1451,7 @@ function ChatLayout({ isDark, onToggle }) {
           <>
             {/* Messages container */}
             <div ref={messagesContainerRef} onScroll={handleScroll}
-              className="flex-1 overflow-y-auto px-6 pt-4 pb-2"
+              className="flex-1 overflow-y-auto px-3 md:px-6 pt-4 pb-2"
               style={{ scrollbarWidth: 'none' }}>
 
               {loadingMore && (
@@ -1531,7 +1535,7 @@ function ChatLayout({ isDark, onToggle }) {
             </div>
 
             {/* ── Input area ── */}
-            <footer className="flex-shrink-0 px-5 pb-5 pt-2"
+            <footer className="flex-shrink-0 px-3 md:px-5 pb-3 md:pb-5 pt-2"
               style={{ backgroundColor: c.footerBg }}>
 
               {/* Reply preview */}
@@ -1563,7 +1567,7 @@ function ChatLayout({ isDark, onToggle }) {
                       setShowEmojiPicker(false);
                       inputRef.current?.focus();
                     }}
-                    height={350}
+                    height={Math.min(350, window.innerHeight * 0.4)}
                     width="100%"
                     searchDisabled={false}
                   />
@@ -1616,7 +1620,7 @@ function ChatLayout({ isDark, onToggle }) {
       </main>
 
       {/* ── Members Sidebar ── */}
-      {!dmMode && <aside className="fixed right-0 top-0 h-full w-[240px] z-40 flex flex-col overflow-y-auto"
+      {!dmMode && <aside className="hidden lg:flex fixed right-0 top-0 h-full w-[240px] z-40 flex-col overflow-y-auto"
         style={{ backgroundColor: c.sidebar, borderLeft: `1px solid ${c.border}`, scrollbarWidth: 'none' }}>
         <header className="h-16 flex items-center px-4 flex-shrink-0"
           style={{ borderBottom: `1px solid ${c.border}` }}>

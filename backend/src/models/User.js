@@ -22,9 +22,26 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, 'Password is required'],
       minlength: [8, 'Password must be at least 8 characters'],
       select: false, // never returned in queries by default
+      validate: {
+        validator: function() {
+          // Password is required only if no OAuth IDs are set
+          return this.password || this.googleId || this.appleId;
+        },
+        message: 'Password is required if not using OAuth'
+      }
+    },
+    // OAuth provider IDs
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true, // allow null values but enforce unique on non-null
+    },
+    appleId: {
+      type: String,
+      unique: true,
+      sparse: true,
     },
     displayName: {
       type: String,
@@ -110,7 +127,7 @@ const userSchema = new mongoose.Schema(
 
 // ─── Pre-save Hook: Hash password ──────────────────────────────────────────────
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password') || !this.password) return next();
   const salt = await bcrypt.genSalt(12);
   this.password = await bcrypt.hash(this.password, salt);
   next();
