@@ -208,3 +208,68 @@ exports.searchMessages = catchAsync(async (req, res, next) => {
 
   return successResponse(res, { messages });
 });
+
+// ─── Upload file attachment ──────────────────────────────────────────────────
+exports.uploadFile = catchAsync(async (req, res, next) => {
+  const cloudinary = require('../config/cloudinary');
+
+  if (!req.file) {
+    return next(ApiError.badRequest('No file provided'));
+  }
+
+  const file = req.file;
+
+  // Determine resource type based on MIME type
+  let resourceType = 'auto';
+  if (file.mimetype.startsWith('image/')) {
+    resourceType = 'image';
+  } else if (file.mimetype.startsWith('video/')) {
+    resourceType = 'video';
+  } else if (file.mimetype.startsWith('audio/')) {
+    resourceType = 'video'; // Cloudinary treats audio as video resource
+  }
+
+  // Upload to Cloudinary from buffer
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        resource_type: resourceType,
+        folder: 'chatapp/attachments',
+        public_id: `${Date.now()}_${file.originalname.split('.')[0]}`,
+        overwrite: true,
+      },
+      (error, result) => {
+        if (error) {
+          reject(error);
+        } else {
+          // Return attachment metadata
+          resolve(successResponse(
+            res,
+            {
+              url: result.secure_url,
+              type: getAttachmentType(file.mimetype),
+              filename: file.originalname,
+              size: file.size,
+              mimeType: file.mimetype,
+              width: result.width,
+              height: result.height,
+            },
+            'File uploaded successfully',
+            201
+          ));
+        }
+      }
+    );
+
+    // Stream file buffer to Cloudinary
+    uploadStream.end(file.buffer);
+  });
+});
+
+// Helper function to determine attachment type
+function getAttachmentType(mimetype) {
+  if (mimetype.startsWith('image/')) return 'image';
+  if (mimetype.startsWith('video/')) return 'video';
+  if (mimetype.startsWith('audio/')) return 'audio';
+  return 'file';
+}

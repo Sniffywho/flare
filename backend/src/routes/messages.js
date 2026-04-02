@@ -4,6 +4,7 @@ const messageController = require('../controllers/messageController');
 const { protect } = require('../middleware/auth');
 const validate = require('../middleware/validate');
 const { messageRateLimiter } = require('../middleware/rateLimiter');
+const upload = require('../middleware/upload');
 
 router.use(protect);
 
@@ -44,5 +45,8 @@ router.post('/:id/reactions', [
 
 // Pin / unpin
 router.post('/:id/pin', messageController.pinMessage);
+
+// Upload file attachment
+router.post('/upload', upload.single('file'), messageController.uploadFile);
 
 module.exports = router;
