@@ -254,6 +254,33 @@ function MessageRow({ msg, currentUserId, currentUser, c, isEditing, editContent
             </p>
           )}
 
+          {/* Attachments */}
+          {msg.attachments && msg.attachments.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {msg.attachments.map((att) => (
+                <div key={att.url} className="max-w-xs">
+                  {att.type === 'image' && (
+                    <img src={att.url} alt={att.filename} className="max-w-xs rounded" />
+                  )}
+                  {att.type === 'video' && (
+                    <video src={att.url} controls className="max-w-xs rounded" />
+                  )}
+                  {att.type === 'audio' && (
+                    <audio src={att.url} controls className="w-full" />
+                  )}
+                  {att.type === 'file' && (
+                    <a href={att.url} download={att.filename}
+                      className="flex items-center gap-2 px-3 py-2 rounded"
+                      style={{ backgroundColor: c.inputBg, border: `1px solid ${c.border}` }}>
+                      <span className="material-symbols-outlined text-base">description</span>
+                      <span className="text-sm">{att.filename}</span>
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Reactions */}
           {!msg.isDeleted && msg.reactions?.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-2">
@@ -625,6 +652,11 @@ function ChatLayout({ isDark, onToggle }) {
   const [attachments, setAttachments] = useState([]);
   const [uploadingFile, setUploadingFile] = useState(false);
 
+  // GIF state
+  const [showGifPicker, setShowGifPicker] = useState(false);
+  const [gifQuery, setGifQuery] = useState('');
+  const [gifs, setGifs] = useState([]);
+
   const typingTimeout = useRef(null);
   const prevChannelId = useRef(null);
   const messagesEndRef = useRef(null);
@@ -867,6 +899,33 @@ function ChatLayout({ isDark, onToggle }) {
       setUploadingFile(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
+  };
+
+  // ── Search and select GIF ─────────────────────────────────────────────────
+  const searchGifs = async (query) => {
+    if (!query.trim()) { setGifs([]); return; }
+    try {
+      const res = await fetch(
+        `https://api.giphy.com/v1/gifs/search?api_key=${import.meta.env.VITE_GIPHY_API_KEY}&q=${query}&limit=12`
+      );
+      const data = await res.json();
+      setGifs(data.data || []);
+    } catch (e) {
+      console.error('GIF search failed:', e);
+    }
+  };
+
+  const handleSelectGif = (gifUrl) => {
+    setAttachments(prev => [...prev, {
+      url: gifUrl,
+      type: 'image',
+      filename: 'gif.gif',
+      size: 0,
+      mimeType: 'image/gif'
+    }]);
+    setShowGifPicker(false);
+    setGifQuery('');
+    setGifs([]);
   };
 
   // ── Send message ──────────────────────────────────────────────────────────
@@ -1603,6 +1662,33 @@ function ChatLayout({ isDark, onToggle }) {
                 </div>
               )}
 
+              {/* GIF picker */}
+              {showGifPicker && (
+                <div className="mb-2 p-3 rounded-lg border" style={{ backgroundColor: c.inputBg, borderColor: c.border, maxHeight: '300px', overflow: 'auto' }}>
+                  <input
+                    type="text"
+                    placeholder="Search GIFs..."
+                    value={gifQuery}
+                    onChange={(e) => { setGifQuery(e.target.value); searchGifs(e.target.value); }}
+                    className="w-full px-3 py-2 rounded border text-sm mb-2 focus:outline-none"
+                    style={{ backgroundColor: c.main, borderColor: c.border, color: c.text }}
+                  />
+                  {gifs.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2">
+                      {gifs.map(gif => (
+                        <img
+                          key={gif.id}
+                          src={gif.images.fixed_height.url}
+                          alt={gif.title}
+                          onClick={() => handleSelectGif(gif.images.original.url)}
+                          className="cursor-pointer rounded hover:opacity-80 transition-opacity"
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Hidden file input */}
               <input
                 ref={fileInputRef}
@@ -1635,8 +1721,8 @@ function ChatLayout({ isDark, onToggle }) {
                   onFocus={() => setShowEmojiPicker(false)} />
 
                 <div className="flex items-center gap-2 px-3 flex-shrink-0">
-                  <button className="hover:opacity-70 transition-opacity" title="GIF"
-                    style={{ color: c.textMuted }}>
+                  <button type="button" onClick={() => setShowGifPicker(v => !v)} className="hover:opacity-70 transition-opacity" title="GIF"
+                    style={{ color: showGifPicker ? c.accent : c.textMuted }}>
                     <span className="material-symbols-outlined">gif_box</span>
                   </button>
                   <button className="hover:opacity-70 transition-opacity" title="Sticker"
