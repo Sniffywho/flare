@@ -1,4 +1,6 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Routes, Route, Navigate, useSearchParams } from 'react-router-dom';
+import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
@@ -17,6 +19,31 @@ function PublicRoute({ children }) {
 }
 
 export default function App() {
+  const [searchParams] = useSearchParams();
+  const { setAuth } = useAuth();
+
+  // Handle OAuth callback — extract tokens from URL and authenticate
+  useEffect(() => {
+    const accessToken = searchParams.get('accessToken');
+    const refreshToken = searchParams.get('refreshToken');
+    const userId = searchParams.get('userId');
+
+    if (accessToken && refreshToken && userId) {
+      // Fetch user data with the access token
+      axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+      axios.get('/api/auth/me')
+        .then(res => {
+          setAuth(res.data.data.user, accessToken, refreshToken);
+          // Clean up URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+        })
+        .catch(() => {
+          // Token might be invalid, clear and redirect to login
+          window.location.href = '/login?error=oauth_callback_failed';
+        });
+    }
+  }, [searchParams, setAuth]);
+
   return (
     <Routes>
       <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />

@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
+import { useGoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
 import { getInitialTheme, applyTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/context/AuthContext';
@@ -52,7 +53,7 @@ function ThemeToggle({ isDark, onToggle, light = false }) {
 }
 
 // ─── Dark layout ──────────────────────────────────────────────────────────────
-function DarkLayout({ form, onToggle, skipAnim = false }) {
+function DarkLayout({ form, onToggle, skipAnim = false, onGoogleLogin, onAppleLogin }) {
   const { showPassword, setShowPassword, rememberMe, setRememberMe,
     serverError, register, handleSubmit, errors, isSubmitting, onSubmit } = form;
 
@@ -166,11 +167,11 @@ function DarkLayout({ form, onToggle, skipAnim = false }) {
               <div className="flex-grow border-t" style={{ borderColor: 'rgba(107,57,66,0.3)' }} />
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <button className="btn-social flex items-center justify-center gap-2 py-3 rounded-full border text-sm font-semibold"
+              <button type="button" onClick={onGoogleLogin} className="btn-social flex items-center justify-center gap-2 py-3 rounded-full border text-sm font-semibold hover:opacity-80 transition-opacity"
                 style={{ backgroundColor: '#350814', borderColor: 'rgba(107,57,66,0.2)', color: '#ffdde1' }}>
                 <GoogleIcon />Google
               </button>
-              <button className="btn-social flex items-center justify-center gap-2 py-3 rounded-full border text-sm font-semibold"
+              <button type="button" className="btn-social flex items-center justify-center gap-2 py-3 rounded-full border text-sm font-semibold hover:opacity-80 transition-opacity"
                 style={{ backgroundColor: '#350814', borderColor: 'rgba(107,57,66,0.2)', color: '#ffdde1' }}>
                 <AppleIcon color="#ffdde1" />Apple
               </button>
@@ -187,7 +188,7 @@ function DarkLayout({ form, onToggle, skipAnim = false }) {
 }
 
 // ─── Light layout ─────────────────────────────────────────────────────────────
-function LightLayout({ form, onToggle, skipAnim = false }) {
+function LightLayout({ form, onToggle, skipAnim = false, onGoogleLogin, onAppleLogin }) {
   const { showPassword, setShowPassword, rememberMe, setRememberMe,
     serverError, register, handleSubmit, errors, isSubmitting, onSubmit } = form;
 
@@ -300,11 +301,11 @@ function LightLayout({ form, onToggle, skipAnim = false }) {
               <div className="flex-grow border-t" style={{ borderColor: '#dde3f5' }} />
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <button className="btn-social flex items-center justify-center gap-2 py-3 rounded-full border text-sm font-semibold hover:bg-[#f4f6ff]"
+              <button type="button" onClick={onGoogleLogin} className="btn-social flex items-center justify-center gap-2 py-3 rounded-full border text-sm font-semibold hover:bg-[#f4f6ff] transition-colors"
                 style={{ backgroundColor: '#ffffff', borderColor: '#dde3f5', color: '#1a2f4d' }}>
                 <GoogleIcon />Google
               </button>
-              <button className="btn-social flex items-center justify-center gap-2 py-3 rounded-full border text-sm font-semibold hover:bg-[#f4f6ff]"
+              <button type="button" className="btn-social flex items-center justify-center gap-2 py-3 rounded-full border text-sm font-semibold hover:bg-[#f4f6ff] transition-colors"
                 style={{ backgroundColor: '#ffffff', borderColor: '#dde3f5', color: '#1a2f4d' }}>
                 <AppleIcon color="#1a2f4d" />Apple
               </button>
@@ -347,6 +348,17 @@ export default function Login() {
     }
   };
 
+  // Google OAuth login
+  const googleLogin = useGoogleLogin({
+    onSuccess: (codeResponse) => {
+      window.location.href = `/api/auth/google?code=${codeResponse.code}`;
+    },
+    onError: () => {
+      setServerError('Google login failed. Please try again.');
+    },
+    flow: 'auth-code',
+  });
+
   const form = { showPassword, setShowPassword, rememberMe, setRememberMe, serverError, register, handleSubmit, errors, isSubmitting, onSubmit };
 
   const handleToggle = (e) => {
@@ -368,8 +380,8 @@ export default function Login() {
     <div className="relative overflow-hidden">
       {/* Current theme */}
       {isDark
-        ? <DarkLayout form={form} onToggle={handleToggle} skipAnim={hasAnimated.current} />
-        : <LightLayout form={form} onToggle={handleToggle} skipAnim={hasAnimated.current} />
+        ? <DarkLayout form={form} onToggle={handleToggle} skipAnim={hasAnimated.current} onGoogleLogin={googleLogin} />
+        : <LightLayout form={form} onToggle={handleToggle} skipAnim={hasAnimated.current} onGoogleLogin={googleLogin} />
       }
 
       {/* Reveal overlay — new theme clips in from click point */}
@@ -380,8 +392,8 @@ export default function Login() {
           onAnimationEnd={onRevealEnd}
         >
           {isDark
-            ? <LightLayout form={form} onToggle={handleToggle} skipAnim />
-            : <DarkLayout form={form} onToggle={handleToggle} skipAnim />
+            ? <LightLayout form={form} onToggle={handleToggle} skipAnim onGoogleLogin={googleLogin} />
+            : <DarkLayout form={form} onToggle={handleToggle} skipAnim onGoogleLogin={googleLogin} />
           }
         </div>
       )}
