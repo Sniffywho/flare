@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import axios from 'axios';
 import { getInitialTheme, applyTheme } from '@/hooks/useTheme';
@@ -323,6 +323,7 @@ function LightLayout({ form, onToggle, skipAnim = false }) {
 // ─── Main Login ───────────────────────────────────────────────────────────────
 export default function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { setAuth } = useAuth();
   const [isDark, setIsDark] = useState(getInitialTheme);
   const [reveal, setReveal] = useState(null);
@@ -340,7 +341,7 @@ export default function Login() {
       const res = await axios.post('/api/auth/login', data);
       const { user, accessToken, refreshToken } = res.data.data;
       setAuth(user, accessToken, refreshToken);
-      navigate('/');
+      navigate(searchParams.get('redirect') || '/');
     } catch (err) {
       setServerError(err.response?.data?.message || 'Login failed. Please try again.');
     }

@@ -602,6 +602,8 @@ function ChatLayout({ isDark, onToggle }) {
   const [showCreateServer, setShowCreateServer] = useState(false);
   const [newChannelName, setNewChannelName] = useState('');
   const [showCreateChannel, setShowCreateChannel] = useState(false);
+  const [newVoiceChannelName, setNewVoiceChannelName] = useState('');
+  const [showCreateVoiceChannel, setShowCreateVoiceChannel] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
 
   // DM state
@@ -916,6 +918,20 @@ function ChatLayout({ isDark, onToggle }) {
     } catch (e) {
       // show nothing — backend error is minor
     }
+  };
+
+  const handleCreateVoiceChannel = async (e) => {
+    e.preventDefault();
+    const name = newVoiceChannelName.trim().toLowerCase().replace(/\s+/g, '-');
+    if (!name || !activeServer) return;
+    try {
+      const res = await axios.post(`/api/channels/server/${activeServer._id}`, { name, type: 'voice' });
+      const ch = res.data.data.channel;
+      setChannels(prev => [...prev, ch]);
+      setActiveChannel(ch);
+      setNewVoiceChannelName('');
+      setShowCreateVoiceChannel(false);
+    } catch (_) {}
   };
 
   // ── Logout ────────────────────────────────────────────────────────────────
@@ -1280,12 +1296,36 @@ function ChatLayout({ isDark, onToggle }) {
           ))}
 
           {/* Voice channels */}
-          {voiceChannels.length > 0 && (
+          {(voiceChannels.length > 0 || canManageChannels) && (
             <div className="flex items-center justify-between px-2 pt-4 pb-2">
               <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: c.textFaint }}>
                 Voice Channels
               </span>
+              {canManageChannels && (
+                <button onClick={() => setShowCreateVoiceChannel(v => !v)}
+                  className="hover:opacity-70 transition-opacity"
+                  style={{ color: c.textFaint }}>
+                  <span className="material-symbols-outlined text-base">add</span>
+                </button>
+              )}
             </div>
+          )}
+          {showCreateVoiceChannel && (
+            <form onSubmit={handleCreateVoiceChannel} className="px-1 pb-2">
+              <input value={newVoiceChannelName} onChange={e => setNewVoiceChannelName(e.target.value)}
+                placeholder="new-voice-channel" autoFocus
+                className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none border"
+                style={{ backgroundColor: c.inputBg, color: c.text, borderColor: c.accent }}
+                onKeyDown={e => e.key === 'Escape' && setShowCreateVoiceChannel(false)} />
+              <div className="flex gap-2 mt-1 px-1">
+                <button type="submit"
+                  className="text-xs px-2 py-1 rounded font-semibold"
+                  style={{ backgroundColor: c.accent, color: c.accentText }}>Create</button>
+                <button type="button" onClick={() => setShowCreateVoiceChannel(false)}
+                  className="text-xs px-2 py-1 rounded hover:opacity-70"
+                  style={{ color: c.textFaint }}>Cancel</button>
+              </div>
+            </form>
           )}
           {voiceChannels.map(ch => (
             <ChannelLink key={ch._id} ch={ch}
