@@ -621,12 +621,17 @@ function ChatLayout({ isDark, onToggle }) {
   const [addFriendMsg, setAddFriendMsg] = useState(null);
   const [showFriendRequests, setShowFriendRequests] = useState(false);
 
+  // Attachments state
+  const [attachments, setAttachments] = useState([]);
+  const [uploadingFile, setUploadingFile] = useState(false);
+
   const typingTimeout = useRef(null);
   const prevChannelId = useRef(null);
   const messagesEndRef = useRef(null);
   const messagesTopRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const inputRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // ── Permissions ───────────────────────────────────────────────────────────
   const myMember = activeServer?.members?.find(m => {
@@ -842,22 +847,46 @@ function ChatLayout({ isDark, onToggle }) {
     } catch (_) {}
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Upload file attachment ───────────────────────────────────────────────
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingFile(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await axios.post('/api/messages/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setAttachments(prev => [...prev, res.data.data]);
+    } catch (err) {
+      alert('Upload failed: ' + (err.response?.data?.message || 'Unknown error'));
+    } finally {
+      setUploadingFile(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   // ── Send message ──────────────────────────────────────────────────────────
   const sendMessage = useCallback(() => {
     const content = message.trim();
-    if (!content || !activeChannel || !socketRef.current) return;
+    if (!content && !attachments.length || !activeChannel || !socketRef.current) return;
 
     socketRef.current.emit('message:send', {
       chatId: activeChannel._id,
       content,
+      attachments: attachments.length > 0 ? attachments : undefined,
       replyTo: replyTo?._id || undefined,
     });
     setMessage('');
+    setAttachments([]);
     setReplyTo(null);
     setShowEmojiPicker(false);
     socketRef.current.emit('message:stop_typing', { chatId: activeChannel._id });
     clearTimeout(typingTimeout.current);
-  }, [message, activeChannel, replyTo, socketRef]);
+  }, [message, attachments, activeChannel, replyTo, socketRef]);
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
@@ -1574,10 +1603,23 @@ function ChatLayout({ isDark, onToggle }) {
                 </div>
               )}
 
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx"
+                onChange={handleFileChange}
+                style={{ display: 'none' }}
+              />
+
               {/* Input row */}
               <div className="relative flex items-center border rounded-2xl overflow-hidden"
                 style={{ backgroundColor: c.inputBg, borderColor: c.border }}>
-                <button className="px-4 py-4 hover:opacity-70 transition-opacity flex-shrink-0"
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingFile}
+                  className="px-4 py-4 hover:opacity-70 disabled:opacity-50 transition-opacity flex-shrink-0"
                   style={{ color: c.textMuted }}>
                   <span className="material-symbols-outlined">add_circle</span>
                 </button>
