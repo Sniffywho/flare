@@ -19,6 +19,9 @@ const channelRoutes = require('./routes/channels');
 
 const app = express();
 
+// ─── Trust Proxy (required for express-rate-limit on Render) ───────────────────
+app.set('trust proxy', 1);
+
 // ─── Security Middleware ───────────────────────────────────────────────────────
 // Sets common HTTP security headers
 app.use(helmet());
