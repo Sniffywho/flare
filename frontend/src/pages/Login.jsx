@@ -331,8 +331,8 @@ export default function Login() {
           onAnimationEnd={onRevealEnd}
         >
           {isDark
-            ? <LightLayout form={form} onToggle={handleToggle} skipAnim onGoogleLogin={googleLogin} />
-            : <DarkLayout form={form} onToggle={handleToggle} skipAnim onGoogleLogin={googleLogin} />
+            ? <LightLayout form={form} onToggle={handleToggle} skipAnim />
+            : <DarkLayout form={form} onToggle={handleToggle} skipAnim />
           }
         </div>
       )}
