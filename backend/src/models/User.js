@@ -22,26 +22,9 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
+      required: [true, 'Password is required'],
       minlength: [8, 'Password must be at least 8 characters'],
       select: false, // never returned in queries by default
-      validate: {
-        validator: function() {
-          // Password is required only if no OAuth IDs are set
-          return this.password || this.googleId || this.appleId;
-        },
-        message: 'Password is required if not using OAuth'
-      }
-    },
-    // OAuth provider IDs
-    googleId: {
-      type: String,
-      unique: true,
-      sparse: true, // allow null values but enforce unique on non-null
-    },
-    appleId: {
-      type: String,
-      unique: true,
-      sparse: true,
     },
     displayName: {
       type: String,
