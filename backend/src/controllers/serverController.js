@@ -124,6 +124,17 @@ exports.joinByInvite = catchAsync(async (req, res, next) => {
   await server.save();
   await User.findByIdAndUpdate(req.user._id, { $addToSet: { servers: server._id } });
 
+  // Broadcast member joined event to all server members
+  const io = req.app.get('io');
+  if (io) {
+    io.to(`server:${server._id}`).emit('server:member_joined', {
+      serverId: server._id,
+      userId: req.user._id,
+      username: req.user.username,
+      avatar: req.user.avatar,
+    });
+  }
+
   return successResponse(res, { server }, 'Joined server');
 });
 
@@ -142,6 +153,15 @@ exports.leaveServer = catchAsync(async (req, res, next) => {
   await server.save();
   await User.findByIdAndUpdate(req.user._id, { $pull: { servers: server._id } });
 
+  // Broadcast member left event to all server members
+  const io = req.app.get('io');
+  if (io) {
+    io.to(`server:${server._id}`).emit('server:member_left', {
+      serverId: server._id,
+      userId: req.user._id,
+    });
+  }
+
   return successResponse(res, {}, 'Left server');
 });
 
@@ -158,6 +178,15 @@ exports.kickMember = catchAsync(async (req, res, next) => {
   server.members = server.members.filter((m) => m.user.toString() !== userId);
   await server.save();
   await User.findByIdAndUpdate(userId, { $pull: { servers: server._id } });
+
+  // Broadcast member left event
+  const io = req.app.get('io');
+  if (io) {
+    io.to(`server:${server._id}`).emit('server:member_left', {
+      serverId: server._id,
+      userId,
+    });
+  }
 
   return successResponse(res, {}, 'Member kicked');
 });
@@ -176,6 +205,15 @@ exports.banMember = catchAsync(async (req, res, next) => {
   if (!server.bannedUsers.includes(userId)) server.bannedUsers.push(userId);
   await server.save();
   await User.findByIdAndUpdate(userId, { $pull: { servers: server._id } });
+
+  // Broadcast member left event
+  const io = req.app.get('io');
+  if (io) {
+    io.to(`server:${server._id}`).emit('server:member_left', {
+      serverId: server._id,
+      userId,
+    });
+  }
 
   return successResponse(res, {}, 'Member banned');
 });

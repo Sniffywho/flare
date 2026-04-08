@@ -50,6 +50,12 @@ exports.createChannel = catchAsync(async (req, res, next) => {
   server.channelOrder.push(channel._id);
   await server.save();
 
+  // Broadcast channel created event to all members in the server
+  const io = req.app.get('io');
+  if (io) {
+    io.to(`server:${server._id}`).emit('channel:created', { channel });
+  }
+
   return successResponse(res, { channel }, 'Channel created', 201);
 });
 
@@ -82,6 +88,13 @@ exports.updateChannel = catchAsync(async (req, res, next) => {
   });
 
   await channel.save();
+
+  // Broadcast channel updated event
+  const io = req.app.get('io');
+  if (io) {
+    io.to(`server:${channel.server}`).emit('channel:updated', { channel });
+  }
+
   return successResponse(res, { channel }, 'Channel updated');
 });
 
@@ -102,6 +115,12 @@ exports.deleteChannel = catchAsync(async (req, res, next) => {
   // Soft-delete messages (keep them but detach from UI)
   await Message.updateMany({ chat: channel._id }, { isDeleted: true });
   await channel.deleteOne();
+
+  // Broadcast channel deleted event
+  const io = req.app.get('io');
+  if (io) {
+    io.to(`server:${channel.server}`).emit('channel:deleted', { channelId: channel._id });
+  }
 
   return successResponse(res, {}, 'Channel deleted');
 });
