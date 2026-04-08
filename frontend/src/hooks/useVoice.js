@@ -34,30 +34,52 @@ export function useVoice(socketRef) {
   }, []);
 
   const createPeer = useCallback((socketId, userInfo, initiator, stream) => {
-    const peer = new SimplePeer({ initiator, stream, trickle: true });
+    if (!stream) {
+      console.error('[Voice] Cannot create peer: no stream');
+      return null;
+    }
+    if (!socketRef.current) {
+      console.error('[Voice] Cannot create peer: no socket');
+      return null;
+    }
 
-    peer.on('signal', data => {
-      socketRef.current?.emit('voice:signal', { to: socketId, signal: data });
-    });
+    try {
+      const peer = new SimplePeer({ initiator, stream, trickle: true });
 
-    peer.on('stream', remoteStream => {
+      peer.on('signal', data => {
+        if (socketRef.current) {
+          socketRef.current.emit('voice:signal', { to: socketId, signal: data });
+        }
+      });
+
+      peer.on('stream', remoteStream => {
+        setPeers(prev => ({
+          ...prev,
+          [socketId]: { stream: remoteStream, user: userInfo },
+        }));
+      });
+
+      peer.on('error', (err) => {
+        console.error('[Voice] Peer error:', err);
+        destroyPeer(socketId);
+      });
+      peer.on('close', () => {
+        console.log('[Voice] Peer closed:', socketId);
+        destroyPeer(socketId);
+      });
+
+      peersRef.current[socketId] = peer;
+      // Add a placeholder so the participant shows up immediately
       setPeers(prev => ({
         ...prev,
-        [socketId]: { stream: remoteStream, user: userInfo },
+        [socketId]: { stream: null, user: userInfo },
       }));
-    });
 
-    peer.on('error', () => destroyPeer(socketId));
-    peer.on('close', () => destroyPeer(socketId));
-
-    peersRef.current[socketId] = peer;
-    // Add a placeholder so the participant shows up immediately
-    setPeers(prev => ({
-      ...prev,
-      [socketId]: { stream: null, user: userInfo },
-    }));
-
-    return peer;
+      return peer;
+    } catch (err) {
+      console.error('[Voice] Error creating peer:', err);
+      return null;
+    }
   }, [socketRef, destroyPeer]);
 
   // ── Socket listeners ────────────────────────────────────────────────────────
@@ -119,7 +141,7 @@ export function useVoice(socketRef) {
       socket.off('voice:signal', onSignal);
       socket.off('voice:user_left', onUserLeft);
     };
-  }, [socketRef.current, createPeer, destroyPeer]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Join a voice channel ────────────────────────────────────────────────────
   const joinVoice = useCallback(async (channelId) => {
