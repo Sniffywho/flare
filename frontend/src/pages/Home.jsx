@@ -793,6 +793,32 @@ function ChatLayout({ isDark, onToggle }) {
       setFriendRequests(prev => prev.filter(r => r.from._id !== u._id));
     };
 
+    // ── Channel/Member real-time updates ──────────────────────────────────
+    const onChannelCreated = ({ channel }) => {
+      setChannels(prev => [...prev, channel]);
+    };
+    const onChannelUpdated = ({ channel }) => {
+      setChannels(prev => prev.map(ch => ch._id === channel._id ? channel : ch));
+    };
+    const onChannelDeleted = ({ channelId }) => {
+      setChannels(prev => prev.filter(ch => ch._id !== channelId));
+      if (activeChannel?._id === channelId) setActiveChannel(null);
+    };
+    const onMemberJoined = ({ serverId, userId, username, avatar }) => {
+      if (activeServer?._id === serverId) {
+        setMembers(prev => {
+          const exists = prev.some(m => m.user?._id === userId);
+          if (exists) return prev;
+          return [...prev, { user: { _id: userId, username, avatar }, role: 'member' }];
+        });
+      }
+    };
+    const onMemberLeft = ({ serverId, userId }) => {
+      if (activeServer?._id === serverId) {
+        setMembers(prev => prev.filter(m => m.user?._id !== userId));
+      }
+    };
+
     socket.on('message:new', onNew);
     socket.on('message:edited', onEdited);
     socket.on('message:deleted', onDeleted);
@@ -802,6 +828,11 @@ function ChatLayout({ isDark, onToggle }) {
     socket.on('presence:update', ({ userId, status }) => onPresence({ userId, status }));
     socket.on('friend:request', onFriendRequest);
     socket.on('friend:accepted', onFriendAccepted);
+    socket.on('channel:created', onChannelCreated);
+    socket.on('channel:updated', onChannelUpdated);
+    socket.on('channel:deleted', onChannelDeleted);
+    socket.on('server:member_joined', onMemberJoined);
+    socket.on('server:member_left', onMemberLeft);
 
     return () => {
       socket.off('message:new', onNew);
@@ -813,6 +844,11 @@ function ChatLayout({ isDark, onToggle }) {
       socket.off('presence:update');
       socket.off('friend:request', onFriendRequest);
       socket.off('friend:accepted', onFriendAccepted);
+      socket.off('channel:created', onChannelCreated);
+      socket.off('channel:updated', onChannelUpdated);
+      socket.off('channel:deleted', onChannelDeleted);
+      socket.off('server:member_joined', onMemberJoined);
+      socket.off('server:member_left', onMemberLeft);
     };
   }, [socketRef.current]); // eslint-disable-line react-hooks/exhaustive-deps
 
