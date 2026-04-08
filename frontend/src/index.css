@@ -53,7 +53,7 @@
   /* ── Input field ── */
   .input-field {
     @apply relative flex items-center bg-[#FFF0F5] rounded-[1rem];
-    outline: 1.5px solid #FFD6E7;
+    outline: 1.4px solid #FFD6E7;
     transition: outline 0.2s ease, box-shadow 0.2s ease;
   }
   .input-field:focus-within {
