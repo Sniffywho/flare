@@ -7,9 +7,11 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try { return JSON.parse(localStorage.getItem('user')); } catch { return null; }
   });
-  const [accessToken, setAccessToken] = useState(
-    () => localStorage.getItem('accessToken') || null
-  );
+  const [accessToken, setAccessToken] = useState(() => {
+    const token = localStorage.getItem('accessToken') || null;
+    if (token) axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    return token;
+  });
 
   // Keep axios Authorization header in sync
   useEffect(() => {
