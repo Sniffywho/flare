@@ -34,6 +34,8 @@ export function useVoice(socketRef) {
   }, []);
 
   const createPeer = useCallback((socketId, userInfo, initiator, stream) => {
+    console.log('[Voice] createPeer called:', { socketId, username: userInfo?.username, initiator });
+
     if (!stream) {
       console.error('[Voice] Cannot create peer: no stream');
       return null;
@@ -44,6 +46,7 @@ export function useVoice(socketRef) {
     }
 
     try {
+      console.log('[Voice] Creating SimplePeer instance...');
       const peer = new SimplePeer({
         initiator,
         stream,
@@ -53,14 +56,17 @@ export function useVoice(socketRef) {
           ]
         }
       });
+      console.log('[Voice] SimplePeer instance created successfully');
 
       peer.on('signal', data => {
+        console.log('[Voice] Signal event from peer:', socketId);
         if (socketRef.current) {
           socketRef.current.emit('voice:signal', { to: socketId, signal: data });
         }
       });
 
       peer.on('stream', remoteStream => {
+        console.log('[Voice] Remote stream received from:', socketId);
         setPeers(prev => ({
           ...prev,
           [socketId]: { stream: remoteStream, user: userInfo },
@@ -77,12 +83,19 @@ export function useVoice(socketRef) {
       });
 
       peersRef.current[socketId] = peer;
-      // Add a placeholder so the participant shows up immediately
-      setPeers(prev => ({
-        ...prev,
-        [socketId]: { stream: null, user: userInfo },
-      }));
+      console.log('[Voice] Added peer to peersRef, now setting placeholder state');
 
+      // Add a placeholder so the participant shows up immediately
+      setPeers(prev => {
+        const next = {
+          ...prev,
+          [socketId]: { stream: null, user: userInfo },
+        };
+        console.log('[Voice] Peers state after placeholder:', Object.keys(next));
+        return next;
+      });
+
+      console.log('[Voice] Peer creation completed for:', socketId);
       return peer;
     } catch (err) {
       console.error('[Voice] Error creating peer:', err);
@@ -97,16 +110,21 @@ export function useVoice(socketRef) {
 
     // Server sends list of users already in the channel
     const onExistingUsers = ({ users }) => {
-      console.log('[Voice] Existing users:', users);
+      console.log('[Voice] Existing users event received:', users);
       const stream = localStreamRef.current;
+      console.log('[Voice] localStream available?', !!stream, stream?.getAudioTracks().length);
       if (!stream) {
-        console.warn('[Voice] No local stream yet');
+        console.warn('[Voice] No local stream yet, cannot create peers');
         return;
       }
       users.forEach(({ socketId, user: userInfo }) => {
-        console.log('[Voice] Creating initiator peer for:', userInfo?.username, socketId);
+        console.log('[Voice] Processing user:', userInfo?.username, 'socketId:', socketId);
         if (!peersRef.current[socketId]) {
-          createPeer(socketId, userInfo, true, stream);
+          console.log('[Voice] Creating initiator peer for:', userInfo?.username);
+          const result = createPeer(socketId, userInfo, true, stream);
+          console.log('[Voice] createPeer returned:', !!result);
+        } else {
+          console.log('[Voice] Peer already exists for:', socketId);
         }
       });
     };
