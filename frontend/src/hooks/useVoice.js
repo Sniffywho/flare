@@ -67,9 +67,14 @@ export function useVoice(socketRef) {
 
     // Server sends list of users already in the channel
     const onExistingUsers = ({ users }) => {
+      console.log('[Voice] Existing users:', users);
       const stream = localStreamRef.current;
-      if (!stream) return;
+      if (!stream) {
+        console.warn('[Voice] No local stream yet');
+        return;
+      }
       users.forEach(({ socketId, user: userInfo }) => {
+        console.log('[Voice] Creating initiator peer for:', userInfo?.username, socketId);
         if (!peersRef.current[socketId]) {
           createPeer(socketId, userInfo, true, stream);
         }
@@ -78,9 +83,14 @@ export function useVoice(socketRef) {
 
     // A new user joined after us
     const onUserJoined = ({ socketId, user: userInfo }) => {
+      console.log('[Voice] User joined:', userInfo?.username, socketId);
       const stream = localStreamRef.current;
-      if (!stream) return;
+      if (!stream) {
+        console.warn('[Voice] No local stream yet');
+        return;
+      }
       if (!peersRef.current[socketId]) {
+        console.log('[Voice] Creating non-initiator peer for:', userInfo?.username);
         createPeer(socketId, userInfo, false, stream);
       }
     };
