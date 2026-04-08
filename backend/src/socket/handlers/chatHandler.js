@@ -82,10 +82,12 @@ module.exports = (io, socket, onlineUsers) => {
 
     // Tell others in the voice room that this user joined
     socket.to(room).emit('voice:user_joined', {
-      userId,
       socketId: socket.id,
-      username: socket.user.username,
-      avatar: socket.user.avatar,
+      user: {
+        _id: userId,
+        username: socket.user.username,
+        avatar: socket.user.avatar,
+      },
     });
 
     // Tell the joiner who is already in the room
@@ -96,7 +98,14 @@ module.exports = (io, socket, onlineUsers) => {
           .map((sid) => {
             const s = io.sockets.sockets.get(sid);
             return s
-              ? { socketId: sid, userId: s.user?._id.toString(), username: s.user?.username }
+              ? {
+                  socketId: sid,
+                  user: {
+                    _id: s.user?._id.toString(),
+                    username: s.user?.username,
+                    avatar: s.user?.avatar,
+                  },
+                }
               : null;
           })
           .filter(Boolean)
